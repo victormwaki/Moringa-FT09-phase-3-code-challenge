@@ -10,61 +10,68 @@ def main():
 
     # Collect user input
     author_name = input("Enter author's name: ")
-    magazine_name = input("Enter magazine name: ")
+    magazine_title = input("Enter magazine title: ")
     magazine_category = input("Enter magazine category: ")
     article_title = input("Enter article title: ")
     article_content = input("Enter article content: ")
 
-    # Connect to the database
-    conn = get_db_connection()
-    cursor = conn.cursor()
-
-
-    '''
-        The following is just for testing purposes, 
-        you can modify it to meet the requirements of your implmentation.
-    '''
-
     # Create an author
-    cursor.execute('INSERT INTO authors (name) VALUES (?)', (author_name,))
-    author_id = cursor.lastrowid # Use this to fetch the id of the newly created author
+    author = Author(name=author_name)
+    print(f"Author Created: ID = {author.id}, Name = {author.name}")
 
     # Create a magazine
-    cursor.execute('INSERT INTO magazines (name, category) VALUES (?,?)', (magazine_name, magazine_category))
-    magazine_id = cursor.lastrowid # Use this to fetch the id of the newly created magazine
+    magazine = Magazine(title=magazine_title, category=magazine_category)
+    print(f"Magazine Created: ID = {magazine.id}, name = {magazine.name}, Category = {magazine.category}")
 
     # Create an article
-    cursor.execute('INSERT INTO articles (title, content, author_id, magazine_id) VALUES (?, ?, ?, ?)',
-                   (article_title, article_content, author_id, magazine_id))
+    article = Article(
+        title=article_title,
+        content=article_content,
+        author_id=author.id,
+        magazine_id=magazine.id
+    )
+    print(f"Article Created: ID = {article.id}, Title = {article.title}, Content = {article.content}")
 
-    conn.commit()
+    # Query all records using model methods (if implemented)
+    print("\nAuthors in Database:")
+    display_authors()
 
-    # Query the database for inserted records. 
-    # The following fetch functionality should probably be in their respective models
+    print("\nMagazines in Database:")
+    display_magazines()
 
-    cursor.execute('SELECT * FROM magazines')
-    magazines = cursor.fetchall()
+    print("\nArticles in Database:")
+    display_articles()
 
-    cursor.execute('SELECT * FROM authors')
-    authors = cursor.fetchall()
 
-    cursor.execute('SELECT * FROM articles')
-    articles = cursor.fetchall()
-
+def display_authors():
+    """Fetch all authors and display them."""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM authors")
+    for row in cursor.fetchall():
+        print(Author(id=row[0], name=row[1]))
     conn.close()
 
-    # Display results
-    print("\nMagazines:")
-    for magazine in magazines:
-        print(Magazine(magazine["id"], magazine["name"], magazine["category"]))
 
-    print("\nAuthors:")
-    for author in authors:
-        print(Author(author["id"], author["name"]))
+def display_magazines():
+    """Fetch all magazines and display them."""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM magazines")
+    for row in cursor.fetchall():
+        print(Magazine(id=row[0], title=row[1], category=row[2]))
+    conn.close()
 
-    print("\nArticles:")
-    for article in articles:
-        print(Article(article["id"], article["title"], article["content"], article["author_id"], article["magazine_id"]))
+
+def display_articles():
+    """Fetch all articles and display them."""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM articles")
+    for row in cursor.fetchall():
+        print(Article(id=row[0], title=row[1], content=row[2], author_id=row[3], magazine_id=row[4]))
+    conn.close()
+
 
 if __name__ == "__main__":
     main()
