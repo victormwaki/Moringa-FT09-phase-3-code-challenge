@@ -1,37 +1,92 @@
-import sqlite3
 from database.connection import get_db_connection
 
 class Author:
-    def __init__(self, id=None, name=None):
-        if not isinstance(name, str) or len(name) == 0:
-            raise ValueError("Name must be a non-empty string.")
-
-        self._id = id
-        self._name = name
-
-        if not id:  # Insert a new author into the database
-            self._id = self._create_author_in_db(name)
-
-    def _create_author_in_db(self, name):
+    def __init__(self, id, name = ""):
+        # Connect to the database
         conn = get_db_connection()
         cursor = conn.cursor()
-        cursor.execute("INSERT INTO authors (name) VALUES (?)", (name,))
-        conn.commit()
-        author_id = cursor.lastrowid
-        conn.close()
-        return author_id
+        cursor.execute("SELECT * FROM authors WHERE id = ? LIMIT 1", [id])
+        author = cursor.fetchone()
+
+        if author:
+            self._id = author['id']
+            self._name = author['name']
+        else:
+            # Allows for validation
+            self._id = 0
+            self.name = name
+            
+            # Create an author
+            cursor.execute('INSERT INTO authors (name) VALUES (?)', (name,))
+            conn.commit()
+            self._id = cursor.lastrowid # Use this to fetch the id of the newly created author
+        
+        cursor.close()    
 
     @property
     def id(self):
         return self._id
+    
+    @id.setter
+    def id(self, id):
+        if hasattr(self, "id"):
+            raise ValueError("ID already set")
+        
+        if not isinstance(id, int):
+            raise TypeError("ID must be int")
+            
+        self._id = id
 
     @property
     def name(self):
         return self._name
-
+    
     @name.setter
-    def name(self, value):
-        raise AttributeError("Cannot modify the name of an author after initialization.")
+    def name(self, name):
+        if hasattr(self, "name"):
+            raise ValueError("Name already set")
+        
+        if not isinstance(name, str):
+            raise TypeError("Name must be string")
+        
+        if len(name) == 0:
+            raise ValueError("Name must be greater than 0 characters")
+        
+        self._name = name
 
-def __repr__(self):
-        return f'<Author{self.title}>'
+    def articles(self):
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT id FROM articles WHERE author_id = ?", [self.id])
+        rows = cursor.fetchall()
+        conn.close()
+        articles = []
+
+        for article in rows:
+            temp = article(article['id'])
+            articles.append(temp)
+
+        return articles
+
+    def magazines(self):
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute('''
+                       SELECT m.id 
+                       FROM magazines m
+                       JOIN articles a ON a.magazine_id = m.id 
+                       WHERE a.author_id = ? 
+                       LIMIT 1
+                       ''', [self.id])
+        rows = cursor.fetchall()
+        conn.close()
+        magazines = []
+
+        for magazine in rows:
+            temp = magazine(magazine['id'])
+            magazines.append(temp)
+
+        return magazines
+    
+    def __repr__(self):
+        return f'<Author {self.id}|{self.name}>'
